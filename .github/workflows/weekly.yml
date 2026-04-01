@@ -1,0 +1,93 @@
+name: Weekly
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  full-build:
+    name: Full Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DEAI_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -C Release
+
+  profile-builds:
+    name: Profile (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [smart-camera, industrial-gateway, robot-controller, mobile-edge, adaptive-edge]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.profile }}
+        run: |
+          cmake -B build -DEAI_PROFILE=${{ matrix.profile }}
+          cmake --build build
+
+  report:
+    name: Weekly Report
+    runs-on: ubuntu-latest
+    needs: [full-build, profile-builds]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Weekly Report — EAI"
+          echo "| Job | Status |"
+          echo "|---|---|"
+          echo "| Full builds | ${{ needs.full-build.result }} |"
+          echo "| Profile builds | ${{ needs.profile-builds.result }} |"
+name: eai Weekly
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  weekly:
+    name: Weekly (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+
+      - name: Install tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake ninja
+
+      - name: Install tools (Windows)
+        if: runner.os == 'Windows'
+        run: choco install cmake ninja -y
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DEAI_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

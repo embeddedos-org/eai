@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  repository_dispatch:
+    types: [dependency-update]
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DEAI_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -C Release
+
+  build-profiles:
+    name: Profile (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [smart-camera, industrial-gateway, robot-controller, mobile-edge]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.profile }}
+        run: |
+          cmake -B build -DEAI_PROFILE=${{ matrix.profile }}
+          cmake --build build

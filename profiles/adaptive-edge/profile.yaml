@@ -1,0 +1,50 @@
+# Adaptive Edge Profile — EAI v0.2.0
+# On-device learning with LoRA adapters and user preference tracking
+
+name: adaptive-edge
+description: "Edge AI with adaptive personalization — learns from user feedback"
+target_hardware: "RPi4 (8GB), Jetson Nano, x86 edge"
+
+variant: framework
+mode: hybrid
+
+runtimes:
+  - llama.cpp
+
+connectors:
+  - mqtt
+
+tools:
+  - device.read_sensor
+  - http.get
+  - mqtt.publish
+  - preference.set
+  - preference.get
+  - feedback.record
+  - model.status
+
+observability: true
+
+# Adaptive / Personalized AI configuration
+adaptive:
+  enabled: true
+  learning_rate: 0.0001
+  lora_rank: 8
+  preference_decay_days: 30
+  max_training_memory_mb: 512
+  train_during_idle: true
+  max_training_steps_per_cycle: 100
+
+# Policy: allow on-device learning
+policy:
+  cloud_fallback: true
+  allow_on_device_learning: true
+  allow_adapter_updates: true
+  user_data_retention_days: 30
+  max_training_steps_per_cycle: 100
+
+# Resource constraints
+constraints:
+  max_ram_mb: 8192
+  max_inference_ms: 5000
+  min_idle_temp_c: 80
