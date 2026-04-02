@@ -160,24 +160,3 @@ eai_status_t eai_fw_adaptive_record_feedback(eai_fw_adaptive_t *adaptive,
 
     return EAI_OK;
 }
-// SPDX-License-Identifier: MIT
-// Copyright (c) 2026 EoS Project
-// ISO/IEC 25000 | ISO/IEC/IEEE 15288:2023
-
-#include "eai_fw/adaptive.h"
-#include "eai/log.h"
-#include <string.h>
-#include <stdlib.h>
-
-#define LOG_MOD "fw-adaptive"
-
-static uint32_t simple_hash(const char *str)
-{
-    uint32_t h = 5381;
-    if (!str) return 0;
-    while (*str) {
-        h = ((h << 5) + h) + (unsigned char)*str++;
-    }
-    return h;
-}
-

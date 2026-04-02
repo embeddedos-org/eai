@@ -13,6 +13,10 @@ target_include_directories(eai_common PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+if(UNIX)
+    target_link_libraries(eai_common PUBLIC m)
+endif()
+
 if(EAI_EIPC_ENABLED)
     target_sources(eai_common PRIVATE src/eipc_listener.c)
     target_compile_definitions(eai_common PUBLIC EAI_EIPC_ENABLED)
