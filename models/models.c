@@ -3,6 +3,7 @@
 // ISO/IEC 25000 | ISO/IEC/IEEE 15288:2023
 
 #include "models.h"
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -252,5 +253,4 @@ void eai_model_list(void) {
                 m->lora_supported ? "yes" : "no",
                 m->target_hardware);
     }
-}
 }

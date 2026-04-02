@@ -5,6 +5,7 @@
 #include "eai_fw/orchestrator.h"
 #include "eai_fw/adaptive.h"
 #include "eai/log.h"
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 

@@ -5,6 +5,7 @@
 #ifndef EAI_MODELS_H
 #define EAI_MODELS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
