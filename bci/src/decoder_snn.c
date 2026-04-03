@@ -6,6 +6,7 @@
 #include "eai_bci/decoder.h"
 #include "eai_bci/signal.h"
 #include <string.h>
+#include <stdlib.h>
 #include <math.h>
 
 #define SNN_MAX_HIDDEN  32
