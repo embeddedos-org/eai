@@ -5,9 +5,13 @@ on:
   repository_dispatch:
     types: [dependency-update]
   push:
-    branches: [master]
+    branches: [main, master, develop]
   pull_request:
-    branches: [master]
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -36,10 +40,67 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [smart-camera, industrial-gateway, robot-controller, mobile-edge]
+        profile:
+          - adaptive-edge
+          - bci-assistive
+          - industrial-gateway
+          - mobile-edge
+          - robot-controller
+          - smart-camera
     steps:
       - uses: actions/checkout@v4
-      - name: Build ${{ matrix.profile }}
+      - name: Build profile
         run: |
-          cmake -B build -DEAI_PROFILE=${{ matrix.profile }}
+          cmake -B build \
+            -DEAI_BUILD_TESTS=OFF \
+            -DEAI_BUILD_MIN=ON \
+            -DEAI_BUILD_FRAMEWORK=ON \
+            -DEAI_BUILD_BCI=ON
           cmake --build build
+
+  cross-compile:
+    name: Cross (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            pkg: gcc-aarch64-linux-gnu
+            cc: aarch64-linux-gnu-gcc
+          - arch: arm
+            pkg: gcc-arm-linux-gnueabihf
+            cc: arm-linux-gnueabihf-gcc
+          - arch: riscv64
+            pkg: gcc-riscv64-linux-gnu
+            cc: riscv64-linux-gnu-gcc
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.pkg }}
+      - name: Cross-compile
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DEAI_BUILD_TESTS=OFF
+          cmake --build build
+
+  sanitize:
+    name: Sanitizers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with ASAN/UBSAN
+        run: |
+          cmake -B build \
+            -DEAI_BUILD_TESTS=ON \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build build
+      - name: Run tests under sanitizers
+        run: ctest --test-dir build --output-on-failure
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
