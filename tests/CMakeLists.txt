@@ -39,3 +39,24 @@ add_test(NAME eai_model_tests COMMAND eai_test_models)
 add_executable(eai_test_adaptive test_adaptive.c)
 target_link_libraries(eai_test_adaptive PRIVATE eai_common)
 add_test(NAME eai_adaptive_tests COMMAND eai_test_adaptive)
+
+# --- BCI tests ---
+if(EAI_BUILD_BCI)
+    add_executable(eai_test_bci_signal test_bci_signal.c)
+    target_link_libraries(eai_test_bci_signal PRIVATE eai_common eai_platform eai_bci)
+    add_test(NAME eai_bci_signal_tests COMMAND eai_test_bci_signal)
+
+    add_executable(eai_test_bci_device test_bci_device.c)
+    target_link_libraries(eai_test_bci_device PRIVATE eai_common eai_platform eai_bci)
+    add_test(NAME eai_bci_device_tests COMMAND eai_test_bci_device)
+
+    add_executable(eai_test_bci_pipeline test_bci_pipeline.c)
+    target_link_libraries(eai_test_bci_pipeline PRIVATE eai_common eai_platform eai_bci)
+    add_test(NAME eai_bci_pipeline_tests COMMAND eai_test_bci_pipeline)
+
+    if(UNIX)
+        target_link_libraries(eai_test_bci_signal PRIVATE m)
+        target_link_libraries(eai_test_bci_device PRIVATE m)
+        target_link_libraries(eai_test_bci_pipeline PRIVATE m)
+    endif()
+endif()

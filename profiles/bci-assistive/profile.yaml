@@ -1,0 +1,48 @@
+# BCI Assistive Device Profile
+# Optimized for brain-computer interface assistive applications
+
+name: bci-assistive
+description: "BCI assistive device — real-time neural signal processing for assistive I/O"
+
+hardware:
+  min_ram_mb: 64
+  target_ram_mb: 256
+  architecture:
+    - arm-cortex-m4
+    - arm-cortex-a53
+    - x86_64
+  peripherals:
+    - eeg_headset
+    - gpio
+    - uart
+
+bci:
+  max_channels: 8
+  sample_rate_hz: 250
+  ring_buffer_size: 256
+  filter:
+    bandpass_low_hz: 1.0
+    bandpass_high_hz: 50.0
+    notch_hz: 50.0
+  decoder: threshold
+  output: gpio
+  simulator: true
+
+performance:
+  max_decode_latency_ms: 50
+  pipeline_step_budget_us: 4000
+  max_memory_kb: 32
+
+runtime:
+  variant: min
+  mode: local
+
+policy:
+  cloud_fallback: false
+  external_tools: false
+  on_device_only: true
+
+observability:
+  metrics: true
+  tracing: false
+  log_level: info

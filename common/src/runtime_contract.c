@@ -27,6 +27,9 @@ const char *eai_status_str(eai_status_t status)
         case EAI_ERR_ADAPTER:       return "ERR_ADAPTER";
         case EAI_ERR_STALE_MODEL:   return "ERR_STALE_MODEL";
         case EAI_ERR_RESOURCE_BUDGET: return "ERR_RESOURCE_BUDGET";
+        case EAI_ERR_BCI_SIGNAL:     return "ERR_BCI_SIGNAL";
+        case EAI_ERR_BCI_CALIBRATION: return "ERR_BCI_CALIBRATION";
+        case EAI_ERR_BCI_DECODE:     return "ERR_BCI_DECODE";
         default:                    return "UNKNOWN";
     }
 }

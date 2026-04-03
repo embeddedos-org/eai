@@ -10,6 +10,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(EAI_BUILD_MIN       "Build EAI-Min lightweight runtime"       ON)
 option(EAI_BUILD_FRAMEWORK "Build EAI-Framework industrial platform" ON)
+option(EAI_BUILD_BCI       "Build EAI-BCI brain-computer interface"  ON)
 option(EAI_BUILD_CLI       "Build EAI CLI tool"                      ON)
 option(EAI_BUILD_TESTS     "Build unit tests"                        OFF)
 
@@ -45,6 +46,10 @@ if(EAI_BUILD_FRAMEWORK)
     add_subdirectory(framework)
 endif()
 
+if(EAI_BUILD_BCI)
+    add_subdirectory(bci)
+endif()
+
 add_subdirectory(models)
 
 if(EAI_BUILD_CLI)
@@ -60,6 +65,7 @@ message(STATUS "--------------------------------------------")
 message(STATUS "EAI v${PROJECT_VERSION}")
 message(STATUS "  EAI-Min:       ${EAI_BUILD_MIN}")
 message(STATUS "  EAI-Framework: ${EAI_BUILD_FRAMEWORK}")
+message(STATUS "  EAI-BCI:       ${EAI_BUILD_BCI}")
 message(STATUS "  CLI:           ${EAI_BUILD_CLI}")
 message(STATUS "  Platform:      eos=${EAI_PLATFORM_EOS} linux=${EAI_PLATFORM_LINUX} win=${EAI_PLATFORM_WINDOWS} container=${EAI_PLATFORM_CONTAINER}")
 message(STATUS "--------------------------------------------")
