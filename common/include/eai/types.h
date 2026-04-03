@@ -26,6 +26,9 @@ typedef enum {
     EAI_ERR_ADAPTER,
     EAI_ERR_STALE_MODEL,
     EAI_ERR_RESOURCE_BUDGET,
+    EAI_ERR_BCI_SIGNAL,
+    EAI_ERR_BCI_CALIBRATION,
+    EAI_ERR_BCI_DECODE,
 } eai_status_t;
 
 typedef enum {

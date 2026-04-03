@@ -10,5 +10,11 @@
 #include "eai_min/agent.h"
 #include "eai_min/router.h"
 #include "eai_min/memory_lite.h"
+#include "eai_min/security_lite.h"
+#include "eai_min/observability_lite.h"
+#include "eai_min/sensor.h"
+#include "eai_min/update.h"
+#include "eai_min/compression.h"
+#include "eai_min/power.h"
 
 #endif /* EAI_MIN_H */

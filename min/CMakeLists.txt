@@ -3,6 +3,12 @@ add_library(eai_min STATIC
     src/agent.c
     src/router.c
     src/memory_lite.c
+    src/security_lite.c
+    src/observability_lite.c
+    src/sensor.c
+    src/update.c
+    src/compression.c
+    src/power.c
 )
 
 target_include_directories(eai_min PUBLIC

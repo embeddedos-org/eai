@@ -12,5 +12,13 @@
 #include "eai_fw/memory.h"
 #include "eai_fw/policy.h"
 #include "eai_fw/observability.h"
+#include "eai_fw/adaptive.h"
+#include "eai_fw/federated.h"
+#include "eai_fw/update_manager.h"
+#include "eai_fw/secure_boot.h"
+#include "eai_fw/supply_chain.h"
+#include "eai_fw/sensor_fusion.h"
+#include "eai_fw/network_security.h"
+#include "eai_fw/guardrails.h"
 
 #endif /* EAI_FRAMEWORK_H */
