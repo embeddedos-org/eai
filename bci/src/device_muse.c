@@ -37,7 +37,7 @@ static eai_status_t muse_init(eai_bci_device_t *dev, const eai_kv_t *params, int
     dev->sample_rate_hz = 256;
     dev->state          = EAI_BCI_STATE_DISCONNECTED;
 
-    EAI_LOG_INFO("Muse: init (4ch EEG, PPG=%s, accel=%s)",
+    EAI_LOG_INFO("bci", "Muse: init (4ch EEG, PPG=%s, accel=%s)",
                  g_muse_ctx.ppg_enabled ? "on" : "off",
                  g_muse_ctx.accel_enabled ? "on" : "off");
     return EAI_OK;

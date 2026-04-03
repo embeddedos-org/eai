@@ -23,14 +23,14 @@ static eai_status_t bci_conn_connect(void *conn, const eai_kv_t *params, int par
     (void)conn;
     (void)params;
     (void)param_count;
-    EAI_LOG_INFO("BCI connector: connect (stub bridge)");
+    EAI_LOG_INFO("bci", "BCI connector: connect (stub bridge)");
     return EAI_OK;
 }
 
 static eai_status_t bci_conn_disconnect(void *conn)
 {
     (void)conn;
-    EAI_LOG_INFO("BCI connector: disconnect");
+    EAI_LOG_INFO("bci", "BCI connector: disconnect");
     return EAI_OK;
 }
 
@@ -60,7 +60,7 @@ static eai_status_t bci_conn_write(void *conn, const char *address,
     (void)address;
     (void)data;
     (void)data_len;
-    EAI_LOG_DEBUG("BCI connector: write command (stub)");
+    EAI_LOG_DEBUG("bci", "BCI connector: write command (stub)");
     return EAI_OK;
 }
 

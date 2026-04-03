@@ -50,10 +50,10 @@ static eai_status_t gpio_execute(eai_bci_output_t *out, const eai_bci_intent_t *
 
     /* Reset all pins then set the active one */
     for (int i = 0; i < ctx->num_pins; i++) {
-        EAI_LOG_DEBUG("BCI GPIO: pin %d -> %d", ctx->gpio_pins[i], (i == class_id) ? 1 : 0);
+        EAI_LOG_DEBUG("bci", "BCI GPIO: pin %d -> %d", ctx->gpio_pins[i], (i == class_id) ? 1 : 0);
     }
 
-    EAI_LOG_INFO("BCI GPIO: intent '%s' (class %d) -> pin %d HIGH",
+    EAI_LOG_INFO("bci", "BCI GPIO: intent '%s' (class %d) -> pin %d HIGH",
                  intent->label, class_id, ctx->gpio_pins[class_id]);
     return EAI_OK;
 }

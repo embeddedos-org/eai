@@ -16,14 +16,14 @@ eai_status_t eai_bci_eipc_init(eai_bci_eipc_t *eipc, const char *endpoint)
     eipc->socket_fd = -1;
     eipc->connected = false;
 
-    EAI_LOG_INFO("BCI EIPC: init endpoint '%s' (stub)", endpoint);
+    EAI_LOG_INFO("bci", "BCI EIPC: init endpoint '%s' (stub)", endpoint);
     return EAI_OK;
 }
 
 eai_status_t eai_bci_eipc_send_intent(eai_bci_eipc_t *eipc, const eai_bci_intent_t *intent)
 {
     if (!eipc || !intent) return EAI_ERR_INVALID;
-    EAI_LOG_DEBUG("BCI EIPC: send intent '%s' (class %u, conf %.2f) (stub)",
+    EAI_LOG_DEBUG("bci", "BCI EIPC: send intent '%s' (class %u, conf %.2f) (stub)",
                   intent->label, intent->class_id, intent->confidence);
     return EAI_OK;
 }
@@ -32,7 +32,7 @@ eai_status_t eai_bci_eipc_stream_signal(eai_bci_eipc_t *eipc, const eai_bci_samp
                                          int count)
 {
     if (!eipc || !samples) return EAI_ERR_INVALID;
-    EAI_LOG_DEBUG("BCI EIPC: stream %d samples (stub)", count);
+    EAI_LOG_DEBUG("bci", "BCI EIPC: stream %d samples (stub)", count);
     return EAI_OK;
 }
 
@@ -48,7 +48,7 @@ void eai_bci_eipc_shutdown(eai_bci_eipc_t *eipc)
     if (!eipc) return;
     eipc->connected = false;
     eipc->socket_fd = -1;
-    EAI_LOG_INFO("BCI EIPC: shutdown");
+    EAI_LOG_INFO("bci", "BCI EIPC: shutdown");
 }
 
 #endif /* EAI_EIPC_ENABLED */

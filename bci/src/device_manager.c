@@ -33,7 +33,7 @@ eai_status_t eai_bci_dev_mgr_add(eai_bci_device_mgr_t *mgr, const char *name,
     if (st != EAI_OK) return st;
 
     mgr->count++;
-    EAI_LOG_INFO("BCI device manager: added '%s' (%s)", name, ops->name);
+    EAI_LOG_INFO("bci", "BCI device manager: added '%s' (%s)", name, ops->name);
     return EAI_OK;
 }
 
@@ -76,7 +76,7 @@ eai_status_t eai_bci_dev_mgr_start_all(eai_bci_device_mgr_t *mgr)
         if (st == EAI_OK)
             mgr->devices[i].active = true;
         else
-            EAI_LOG_WARN("BCI device '%s' failed to start: %s",
+            EAI_LOG_WARN("bci", "BCI device '%s' failed to start: %s",
                          mgr->devices[i].name, eai_status_str(st));
     }
     return EAI_OK;

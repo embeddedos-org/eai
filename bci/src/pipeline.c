@@ -46,7 +46,7 @@ eai_status_t eai_bci_pipeline_start(eai_bci_pipeline_t *pipe)
     pipe->samples_processed  = 0;
     pipe->intents_decoded    = 0;
 
-    EAI_LOG_INFO("BCI pipeline started: %u ch @ %u Hz",
+    EAI_LOG_INFO("bci", "BCI pipeline started: %u ch @ %u Hz",
                  pipe->device->num_channels, pipe->device->sample_rate_hz);
     return EAI_OK;
 }
@@ -103,7 +103,7 @@ eai_status_t eai_bci_pipeline_stop(eai_bci_pipeline_t *pipe)
         eai_bci_device_stop(pipe->device);
     }
 
-    EAI_LOG_INFO("BCI pipeline stopped: %llu samples, %llu intents",
+    EAI_LOG_INFO("bci", "BCI pipeline stopped: %llu samples, %llu intents",
                  (unsigned long long)pipe->samples_processed,
                  (unsigned long long)pipe->intents_decoded);
     return EAI_OK;

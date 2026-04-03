@@ -36,14 +36,14 @@ static eai_status_t openbci_init(eai_bci_device_t *dev, const eai_kv_t *params, 
     dev->sample_rate_hz = 250;
     dev->state          = EAI_BCI_STATE_DISCONNECTED;
 
-    EAI_LOG_INFO("OpenBCI: init on %s @ %u baud", g_openbci_ctx.port, g_openbci_ctx.baud_rate);
+    EAI_LOG_INFO("bci", "OpenBCI: init on %s @ %u baud", g_openbci_ctx.port, g_openbci_ctx.baud_rate);
     return EAI_OK;
 }
 
 static eai_status_t openbci_start(eai_bci_device_t *dev)
 {
     openbci_ctx_t *ctx = (openbci_ctx_t *)dev->ctx;
-    EAI_LOG_INFO("OpenBCI: start stream (stub) on %s", ctx->port);
+    EAI_LOG_INFO("bci", "OpenBCI: start stream (stub) on %s", ctx->port);
     ctx->streaming = true;
     dev->state = EAI_BCI_STATE_STREAMING;
     return EAI_OK;

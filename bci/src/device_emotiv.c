@@ -33,7 +33,7 @@ static eai_status_t emotiv_init(eai_bci_device_t *dev, const eai_kv_t *params, i
     dev->sample_rate_hz = 256;
     dev->state          = EAI_BCI_STATE_DISCONNECTED;
 
-    EAI_LOG_INFO("Emotiv: init headset type %d (%d ch)", g_emotiv_ctx.headset_type, dev->num_channels);
+    EAI_LOG_INFO("bci", "Emotiv: init headset type %d (%d ch)", g_emotiv_ctx.headset_type, dev->num_channels);
     return EAI_OK;
 }
 

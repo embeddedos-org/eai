@@ -27,7 +27,7 @@ eai_status_t eai_bci_plugin_register(eai_bci_plugin_registry_t *reg,
     reg->plugins[reg->count] = *plugin;
     reg->count++;
 
-    EAI_LOG_INFO("BCI plugin registered: '%s' v%s",
+    EAI_LOG_INFO("bci", "BCI plugin registered: '%s' v%s",
                  plugin->name, plugin->version ? plugin->version : "?");
     return EAI_OK;
 }
@@ -45,10 +45,10 @@ eai_bci_plugin_t *eai_bci_plugin_find(eai_bci_plugin_registry_t *reg, const char
 void eai_bci_plugin_list(const eai_bci_plugin_registry_t *reg)
 {
     if (!reg) return;
-    EAI_LOG_INFO("BCI plugins (%d registered):", reg->count);
+    EAI_LOG_INFO("bci", "BCI plugins (%d registered):", reg->count);
     for (int i = 0; i < reg->count; i++) {
         const eai_bci_plugin_t *p = &reg->plugins[i];
-        EAI_LOG_INFO("  [%d] %s v%s - device:%s decoder:%s output:%s",
+        EAI_LOG_INFO("bci", "  [%d] %s v%s - device:%s decoder:%s output:%s",
                      i, p->name,
                      p->version ? p->version : "?",
                      p->device_ops ? p->device_ops->name : "none",
