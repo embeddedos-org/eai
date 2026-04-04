@@ -30,7 +30,7 @@ typedef enum {
     EAI_RUNTIME_ONNX       = 1,
     EAI_RUNTIME_TFLITE     = 2,
     EAI_RUNTIME_CUSTOM     = 3
-} eai_runtime_t;
+} eai_model_runtime_t;
 
 typedef enum {
     EAI_MODEL_TIER_MICRO  = 0,   /* < 100MB, MCU-class (Cortex-M7, RP2040) */
@@ -45,7 +45,7 @@ typedef struct {
     const char     *family;
     const char     *description;
     eai_quant_t     quant;
-    eai_runtime_t   runtime;
+    eai_model_runtime_t   runtime;
     eai_model_tier_t tier;
     uint32_t        param_count_m;    /* parameters in millions */
     uint32_t        context_len;      /* max context tokens */

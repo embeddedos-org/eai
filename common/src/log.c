@@ -36,14 +36,24 @@ void eai_log_set_output(FILE *fp)
 
 void eai_log_write(eai_log_level_t level, const char *module, const char *fmt, ...)
 {
+    if ((int)level < 0 || (int)level > EAI_LVL_FATAL) return;
+    if ((int)level < 0 || (int)level > EAI_LVL_FATAL) return;
     if (level < g_log_level) return;
 
     FILE *out = g_log_fp ? g_log_fp : stderr;
 
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
-    char timebuf[32];
-    strftime(timebuf, sizeof(timebuf), "%H:%M:%S", t);
+    if (t) {
+        strftime(timebuf, sizeof(timebuf), "%H:%M:%S", t);
+    } else {
+        snprintf(timebuf, sizeof(timebuf), "??:??:??");
+    }
+    if (t) {
+        strftime(timebuf, sizeof(timebuf), "%H:%M:%S", t);
+    } else {
+        snprintf(timebuf, sizeof(timebuf), "??:??:??");
+    }
 
     fprintf(out, "%s%s [%s] %s: ",
             level_colors[level], timebuf, level_names[level], module);

@@ -9,6 +9,24 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+typedef SOCKET sock_t;
+#define SOCK_INVALID INVALID_SOCKET
+#define sock_close closesocket
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+typedef int sock_t;
+#define SOCK_INVALID (-1)
+#define sock_close close
+#endif
+
 #define LOG_MOD "tools"
 
 /* ========== mqtt.publish ========== */
@@ -121,11 +139,129 @@ static eai_status_t tool_http_get_exec(const eai_kv_t *args, int arg_count,
     }
 
     int timeout = timeout_str ? atoi(timeout_str) : 5000;
+    (void)timeout;
 
-    EAI_LOG_INFO(LOG_MOD, "http.get url='%s' timeout=%dms", url, timeout);
+    EAI_LOG_INFO(LOG_MOD, "http.get url='%s'", url);
+
+    /* Parse URL: http://host[:port][/path] */
+    const char *p = url;
+    int use_https = 0;
+    if (strncmp(p, "https://", 8) == 0) { use_https = 1; p += 8; }
+    else if (strncmp(p, "http://", 7) == 0) { p += 7; }
+
+    if (use_https) {
+        snprintf(result->data, sizeof(result->data),
+                 "{\"status\":0,\"error\":\"HTTPS requires TLS support\"}");
+        result->len = strlen(result->data);
+        return EAI_ERR_UNSUPPORTED;
+    }
+
+    char host[256] = {0};
+    char path[512] = "/";
+    int port = 80;
+
+    const char *colon = strchr(p, ':');
+    const char *slash = strchr(p, '/');
+
+    if (colon && (!slash || colon < slash)) {
+        size_t hlen = (size_t)(colon - p);
+        if (hlen >= sizeof(host)) hlen = sizeof(host) - 1;
+        memcpy(host, p, hlen);
+        host[hlen] = '\0';
+        port = atoi(colon + 1);
+    } else if (slash) {
+        size_t hlen = (size_t)(slash - p);
+        if (hlen >= sizeof(host)) hlen = sizeof(host) - 1;
+        memcpy(host, p, hlen);
+        host[hlen] = '\0';
+    } else {
+        strncpy(host, p, sizeof(host) - 1);
+    }
+
+    if (slash) strncpy(path, slash, sizeof(path) - 1);
+
+#ifdef _WIN32
+    WSADATA wsa;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
+#endif
+
+    struct addrinfo hints, *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    char port_str[16];
+    snprintf(port_str, sizeof(port_str), "%d", port);
+
+    if (getaddrinfo(host, port_str, &hints, &res) != 0) {
+        snprintf(result->data, sizeof(result->data),
+                 "{\"status\":0,\"error\":\"DNS resolve failed for %s\"}", host);
+        result->len = strlen(result->data);
+        return EAI_ERR_CONNECT;
+    }
+
+    sock_t sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (sock == SOCK_INVALID) {
+        freeaddrinfo(res);
+        snprintf(result->data, sizeof(result->data),
+                 "{\"status\":0,\"error\":\"socket creation failed\"}");
+        result->len = strlen(result->data);
+        return EAI_ERR_CONNECT;
+    }
+
+    if (connect(sock, res->ai_addr, (int)res->ai_addrlen) != 0) {
+        sock_close(sock);
+        freeaddrinfo(res);
+        snprintf(result->data, sizeof(result->data),
+                 "{\"status\":0,\"error\":\"connect failed to %s:%d\"}", host, port);
+        result->len = strlen(result->data);
+        return EAI_ERR_CONNECT;
+    }
+    freeaddrinfo(res);
+
+    /* Send HTTP GET request */
+    char request[1024];
+    int req_len = snprintf(request, sizeof(request),
+        "GET %s HTTP/1.1\r\n"
+        "Host: %s\r\n"
+        "User-Agent: eAI/1.0\r\n"
+        "Accept: */*\r\n"
+        "Connection: close\r\n"
+        "\r\n",
+        path, host);
+
+    send(sock, request, req_len, 0);
+
+    /* Read response */
+    char response[4096];
+    int total = 0;
+    while (total < (int)sizeof(response) - 1) {
+        int n = recv(sock, response + total, (int)(sizeof(response) - 1 - total), 0);
+        if (n <= 0) break;
+        total += n;
+    }
+    response[total] = '\0';
+    sock_close(sock);
+
+    /* Parse HTTP status code */
+    int status_code = 0;
+    if (strncmp(response, "HTTP/", 5) == 0) {
+        const char *sp = strchr(response, ' ');
+        if (sp) status_code = atoi(sp + 1);
+    }
+
+    /* Find body after headers */
+    const char *body = strstr(response, "\r\n\r\n");
+    if (body) body += 4;
+    else body = "";
+
+    /* Truncate body to fit result */
+    size_t body_len = strlen(body);
+    if (body_len > sizeof(result->data) - 100) body_len = sizeof(result->data) - 100;
 
     snprintf(result->data, sizeof(result->data),
-             "{\"status\":200,\"url\":\"%s\",\"body\":\"[stub response]\"}", url);
+             "{\"status\":%d,\"url\":\"%s\",\"body_len\":%zu,\"body\":\"%.*s\"}",
+             status_code, url, body_len, (int)body_len, body);
     result->len = strlen(result->data);
     return EAI_OK;
 }

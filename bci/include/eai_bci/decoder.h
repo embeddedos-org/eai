@@ -41,6 +41,8 @@ eai_status_t eai_bci_decoder_reset(eai_bci_decoder_t *dec);
 void         eai_bci_decoder_shutdown(eai_bci_decoder_t *dec);
 
 extern const eai_bci_decoder_ops_t eai_bci_decoder_threshold_ops;
+extern const eai_bci_decoder_ops_t eai_bci_decoder_snn_ops;
+extern const eai_bci_decoder_ops_t eai_bci_decoder_snn_ops;
 
 #ifdef EAI_BCI_TINYML_ENABLED
 extern const eai_bci_decoder_ops_t eai_bci_decoder_tinyml_ops;

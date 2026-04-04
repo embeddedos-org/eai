@@ -99,8 +99,8 @@ eai_status_t eai_config_load_profile(eai_config_t *cfg, const char *profile_name
         cfg->mode    = EAI_MODE_LOCAL;
         cfg->runtime_multi.providers[0] = "onnxruntime";
         cfg->runtime_multi.provider_count = 1;
-        cfg->tools[0] = "device.read_sensor";
-        cfg->tools[1] = "http.get";
+        cfg->tools[0] = strdup("device.read_sensor");
+        cfg->tools[1] = strdup("http.get");
         cfg->tool_count = 2;
         cfg->observability = true;
     }
@@ -114,9 +114,9 @@ eai_status_t eai_config_load_profile(eai_config_t *cfg, const char *profile_name
         cfg->connectors[1] = "opcua";
         cfg->connectors[2] = "modbus";
         cfg->connector_count = 3;
-        cfg->tools[0] = "mqtt.publish";
-        cfg->tools[1] = "device.read_sensor";
-        cfg->tools[2] = "http.get";
+        cfg->tools[0] = strdup("mqtt.publish");
+        cfg->tools[1] = strdup("device.read_sensor");
+        cfg->tools[2] = strdup("http.get");
         cfg->tool_count = 3;
         cfg->observability = true;
     }
@@ -129,17 +129,17 @@ eai_status_t eai_config_load_profile(eai_config_t *cfg, const char *profile_name
         cfg->connectors[0] = "can";
         cfg->connectors[1] = "mqtt";
         cfg->connector_count = 2;
-        cfg->tools[0] = "device.read_sensor";
-        cfg->tools[1] = "mqtt.publish";
+        cfg->tools[0] = strdup("device.read_sensor");
+        cfg->tools[1] = strdup("mqtt.publish");
         cfg->tool_count = 2;
         cfg->observability = true;
     }
     else if (strcmp(profile_name, "mobile-edge") == 0) {
         cfg->variant = EAI_VARIANT_MIN;
         cfg->mode    = EAI_MODE_HYBRID;
-        cfg->runtime_single.provider = "llama.cpp";
-        cfg->tools[0] = "http.get";
-        cfg->tools[1] = "device.read_sensor";
+        cfg->runtime_single.provider = strdup("llama.cpp");
+        cfg->tools[0] = strdup("http.get");
+        cfg->tools[1] = strdup("device.read_sensor");
         cfg->tool_count = 2;
         cfg->observability = false;
     }
@@ -150,13 +150,13 @@ eai_status_t eai_config_load_profile(eai_config_t *cfg, const char *profile_name
         cfg->runtime_multi.provider_count = 1;
         cfg->connectors[0] = "mqtt";
         cfg->connector_count = 1;
-        cfg->tools[0] = "device.read_sensor";
-        cfg->tools[1] = "http.get";
-        cfg->tools[2] = "mqtt.publish";
-        cfg->tools[3] = "preference.set";
-        cfg->tools[4] = "preference.get";
-        cfg->tools[5] = "feedback.record";
-        cfg->tools[6] = "model.status";
+        cfg->tools[0] = strdup("device.read_sensor");
+        cfg->tools[1] = strdup("http.get");
+        cfg->tools[2] = strdup("mqtt.publish");
+        cfg->tools[3] = strdup("preference.set");
+        cfg->tools[4] = strdup("preference.get");
+        cfg->tools[5] = strdup("feedback.record");
+        cfg->tools[6] = strdup("model.status");
         cfg->tool_count = 7;
         cfg->observability = true;
         cfg->adaptive.enable_learning = true;

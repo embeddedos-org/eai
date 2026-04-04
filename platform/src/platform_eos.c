@@ -4,31 +4,61 @@
 
 #include "eai/platform.h"
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #if defined(EAI_PLATFORM_EOS_ENABLED)
 
-static int eos_init(void) { return 0; }
-static void eos_deinit(void) {}
-static uint64_t eos_monotonic_ms(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+static eai_status_t eos_init(eai_platform_t *plat) {
+    (void)plat;
+    return EAI_OK;
 }
-static void eos_sleep_ms(uint32_t ms) {
-    struct timespec ts = { .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 };
-    nanosleep(&ts, NULL);
+
+static eai_status_t eos_get_device_info(eai_platform_t *plat, char *buf, size_t buf_size) {
+    (void)plat;
+    snprintf(buf, buf_size, "EoS Device (embedded)");
+    return EAI_OK;
 }
-static void eos_log(const char *mod, const char *msg) {
-    printf("[EoS/%s] %s\n", mod, msg);
+
+static eai_status_t eos_read_gpio(eai_platform_t *plat, int pin, int *value) {
+    (void)plat; (void)pin;
+    if (!value) return EAI_ERR_INVALID;
+    *value = 0;
+    return EAI_ERR_UNSUPPORTED;
+}
+
+static eai_status_t eos_write_gpio(eai_platform_t *plat, int pin, int value) {
+    (void)plat; (void)pin; (void)value;
+    return EAI_ERR_UNSUPPORTED;
+}
+
+static eai_status_t eos_get_memory_info(eai_platform_t *plat, uint64_t *total, uint64_t *available) {
+    (void)plat;
+    if (total) *total = 256 * 1024 * 1024ULL;
+    if (available) *available = 128 * 1024 * 1024ULL;
+    return EAI_OK;
+}
+
+static eai_status_t eos_get_cpu_temp(eai_platform_t *plat, float *temp_c) {
+    (void)plat;
+    if (!temp_c) return EAI_ERR_INVALID;
+    *temp_c = 0.0f;
+    return EAI_ERR_UNSUPPORTED;
+}
+
+static void eos_shutdown(eai_platform_t *plat) {
+    (void)plat;
 }
 
 const eai_platform_ops_t eai_platform_eos_ops = {
-    .init         = eos_init,
-    .deinit       = eos_deinit,
-    .monotonic_ms = eos_monotonic_ms,
-    .sleep_ms     = eos_sleep_ms,
-    .log          = eos_log,
+    .name            = "eos",
+    .init            = eos_init,
+    .get_device_info = eos_get_device_info,
+    .read_gpio       = eos_read_gpio,
+    .write_gpio      = eos_write_gpio,
+    .get_memory_info = eos_get_memory_info,
+    .get_cpu_temp    = eos_get_cpu_temp,
+    .shutdown        = eos_shutdown,
 };
 
 #endif

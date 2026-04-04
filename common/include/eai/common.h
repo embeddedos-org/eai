@@ -16,6 +16,6 @@
 #define EAI_VERSION_MAJOR 0
 #define EAI_VERSION_MINOR 1
 #define EAI_VERSION_PATCH 0
-#define EAI_VERSION_STRING "0.2.0"
+#define EAI_VERSION_STRING "0.1.0"
 
 #endif /* EAI_COMMON_H */

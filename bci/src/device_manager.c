@@ -49,7 +49,7 @@ eai_status_t eai_bci_dev_mgr_remove(eai_bci_device_mgr_t *mgr, const char *name)
 
             if (i < mgr->count - 1) {
                 memmove(&mgr->devices[i], &mgr->devices[i + 1],
-                        (mgr->count - i - 1) * sizeof(eai_bci_device_entry_t));
+                        (size_t)(mgr->count - i - 1) * sizeof(eai_bci_device_entry_t));
             }
             mgr->count--;
             return EAI_OK;

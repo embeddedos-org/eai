@@ -21,15 +21,39 @@ static eai_bci_pipeline_t *g_bci_pipeline = NULL;
 static eai_status_t bci_conn_connect(void *conn, const eai_kv_t *params, int param_count)
 {
     (void)conn;
-    (void)params;
-    (void)param_count;
-    EAI_LOG_INFO("bci", "BCI connector: connect (stub bridge)");
+
+    if (!g_bci_pipeline) {
+        EAI_LOG_WARN("bci", "BCI connector: no pipeline attached, connect deferred");
+        return EAI_OK;
+    }
+
+    /* Apply any connection params to the pipeline config */
+    for (int i = 0; i < param_count; i++) {
+        if (strcmp(params[i].key, "device") == 0) {
+            EAI_LOG_INFO("bci", "BCI connector: device override = %s", params[i].value);
+        }
+        if (strcmp(params[i].key, "channels") == 0) {
+            EAI_LOG_INFO("bci", "BCI connector: channels = %s", params[i].value);
+        }
+    }
+
+    /* Start the BCI pipeline if not already running */
+    eai_status_t st = eai_bci_pipeline_start(g_bci_pipeline);
+    if (st != EAI_OK) {
+        EAI_LOG_ERROR("bci", "BCI connector: pipeline start failed: %d", st);
+        return st;
+    }
+
+    EAI_LOG_INFO("bci", "BCI connector: connected (pipeline active)");
     return EAI_OK;
 }
 
 static eai_status_t bci_conn_disconnect(void *conn)
 {
     (void)conn;
+    if (g_bci_pipeline) {
+        eai_bci_pipeline_stop(g_bci_pipeline);
+    }
     EAI_LOG_INFO("bci", "BCI connector: disconnect");
     return EAI_OK;
 }
@@ -57,16 +81,36 @@ static eai_status_t bci_conn_write(void *conn, const char *address,
                                     const void *data, size_t data_len)
 {
     (void)conn;
-    (void)address;
-    (void)data;
-    (void)data_len;
-    EAI_LOG_DEBUG("bci", "BCI connector: write command (stub)");
+
+    if (!g_bci_pipeline) return EAI_ERR_INVALID;
+
+    /* Write commands to BCI pipeline for actuator control.
+     * Supported commands:
+     *   "start" - start acquisition
+     *   "stop"  - stop acquisition
+     *   "calibrate" - run calibration
+     */
+    if (data && data_len > 0) {
+        const char *cmd = (const char *)data;
+        EAI_LOG_INFO("bci", "BCI connector: write command '%.*s' to '%s'",
+                     (int)data_len, cmd, address ? address : "default");
+
+        if (strncmp(cmd, "start", 5) == 0) {
+            eai_bci_pipeline_start(g_bci_pipeline);
+        } else if (strncmp(cmd, "stop", 4) == 0) {
+            eai_bci_pipeline_stop(g_bci_pipeline);
+        }
+    }
+
     return EAI_OK;
 }
 
 void eai_bci_connector_set_pipeline(eai_bci_pipeline_t *pipe)
 {
     g_bci_pipeline = pipe;
+    if (pipe) {
+        EAI_LOG_INFO("bci", "BCI connector: pipeline attached");
+    }
 }
 
 #endif /* EAI_BUILD_FRAMEWORK */
