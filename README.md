@@ -408,6 +408,54 @@ eAI/
 
 ---
 
+## 🔐 Security
+
+eAI implements an 8-layer defense-in-depth security architecture. Key security components:
+
+### Secure Boot Chain
+
+| Status | Description |
+|--------|-------------|
+| **Stub** | `eai_fw_secboot_verify_chain()` currently copies expected hashes without computing real hashes |
+
+> **WARNING**: The boot chain verification in `framework/src/secure_boot.c` is a **stub**. It does NOT perform real hash computation — verification always succeeds. For production, integrate with eboot's SHA-256/Ed25519 crypto or a real cryptographic library. See `TODO(security)` comments in the source.
+
+### AI Safety — Guardrails
+
+The guardrails module (`framework/src/guardrails.c`) is **fully implemented**:
+
+| Feature | Description |
+|---------|-------------|
+| **Prompt Injection Detection** | Blocks patterns: "ignore previous instructions", "system prompt", "forget everything" |
+| **Unsafe Action Blocking** | Blocks "override safety" patterns |
+| **PII Leak Prevention** | Warns on "personal information" in outputs |
+| **Kill Switch** | Emergency halt of all autonomous AI operations |
+| **Rate Limiting** | Configurable max inferences per time window |
+| **Autonomy Levels** | `FULL_AUTO` → `SUPERVISED` → `MANUAL_ONLY` |
+| **Input/Output Length Limits** | Configurable max input (8KB) and output (16KB) sizes |
+
+### Additional Security Modules
+
+| Module | Status | Description |
+|--------|--------|-------------|
+| **Policy Engine** | Real | Subject/resource/operation ACL with wildcards and audit mode |
+| **Network Security** | Real | TLS/mTLS, certificate management, key rotation |
+| **Supply Chain** | Real | SBOM tracking, vendor trust levels, license compliance |
+| **Audit Logging** | Real | Signed audit trails, ring-buffer event logs |
+| **OTA Updates** | Real | Signed firmware updates with hash verification and rollback |
+
+### Security Hardening Checklist
+
+- [ ] Replace secure boot stub with real hash computation before production
+- [ ] Configure guardrails with application-specific safety rules
+- [ ] Set autonomy level to `SUPERVISED` or `MANUAL_ONLY` for safety-critical deployments
+- [ ] Enable network security (TLS/mTLS) for all external communications
+- [ ] Verify supply chain components and SBOM before deployment
+
+For vulnerability reports, see [SECURITY.md](SECURITY.md).
+
+---
+
 ## Compliance
 
 eAI is designed and documented following international standards:

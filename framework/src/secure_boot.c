@@ -66,12 +66,35 @@ eai_status_t eai_fw_secboot_verify_chain(eai_fw_secure_boot_t *sb) {
     if (!sb) return EAI_ERR_INVALID;
 
     EAI_LOG_INFO(MOD, "verifying boot chain (%d stages)...", sb->chain_length);
+
+    /*
+     * ========================================================================
+     * WARNING: STUB VERIFICATION — NOT FOR PRODUCTION USE
+     * ========================================================================
+     *
+     * This function does NOT perform real cryptographic verification.
+     * It copies the expected hash directly to the computed hash field,
+     * meaning verification ALWAYS succeeds regardless of actual image
+     * integrity. This is a CRITICAL SECURITY VULNERABILITY if deployed.
+     *
+     * For production, this must be replaced with:
+     *   1. Actual hash computation over the component binary (SHA-256/SHA-512)
+     *   2. Comparison of computed hash against expected_hash
+     *   3. Optional: signature verification using a trusted public key
+     *
+     * TODO(security): Integrate with eboot's crypto_boot.c SHA-256/Ed25519
+     *                 for real hash computation and signature verification.
+     * ========================================================================
+     */
+    EAI_LOG_WARN(MOD, "WARNING: using STUB verification — hashes are NOT actually computed");
+
     sb->chain_verified = true;
 
     for (int i = 0; i < sb->chain_length; i++) {
         eai_boot_chain_entry_t *e = &sb->chain[i];
 
-        /* Stub: Simulate hash computation matching expected hash */
+        /* STUB: Copies expected hash as computed — always passes.
+         * In production, compute: SHA-256(component_binary) and compare. */
         strncpy(e->hash, e->expected_hash, EAI_BOOT_HASH_MAX - 1);
         e->hash[EAI_BOOT_HASH_MAX - 1] = '\0';
 
