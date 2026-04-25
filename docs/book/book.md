@@ -415,6 +415,9 @@ eai_tool_t tools[] = {
 
 ### 7.1 Sensor Registry
 
+![Figure: eAI Sensor-to-Action Data Flow — complete inference pipeline with drift monitoring](images/data-flow.png)
+
+
 ```c
 eai_min_sensor_t sensors;
 eai_min_sensor_init(&sensors);
@@ -835,6 +838,9 @@ eai_min_runtime_load(&runtime, "model.onnx", NULL);
 ## Chapter 18: 8-Layer Security Architecture
 
 ### 18.1 Defense in Depth
+
+![Figure: eAI 8-Layer Security Architecture — from model encryption to supply chain verification](images/security-layers.png)
+
 
 | Layer | Focus | Implementation |
 |---|---|---|
