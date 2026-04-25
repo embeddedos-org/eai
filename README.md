@@ -473,3 +473,7 @@ See [`docs/compliance/`](docs/compliance/) for traceability matrix, risk registe
 MIT License — see [LICENSE](LICENSE) for details.
 
 Copyright (c) 2026 EoS Project.
+
+
+---
+Part of the [EmbeddedOS Organization](https://embeddedos-org.github.io).
