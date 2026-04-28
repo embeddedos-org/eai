@@ -7,7 +7,8 @@ add_library(eai_platform STATIC
 )
 
 target_include_directories(eai_platform PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(eai_platform PUBLIC eai_common)
