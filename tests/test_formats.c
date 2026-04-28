@@ -60,8 +60,8 @@ static const char *create_test_onnx(void)
     FILE *fp = fopen(path, "wb");
     if (!fp) return NULL;
 
-    /* Minimal ONNX-like protobuf: field 1 (ir_version) varint = 7 */
-    uint8_t data[] = { 0x08, 0x07 }; /* field 1, wire type 0, value 7 */
+    /* Minimal ONNX-like protobuf: field 1 (ir_version) varint = 7, padded to 4+ bytes */
+    uint8_t data[] = { 0x08, 0x07, 0x10, 0x01 }; /* field 1=7, field 2=1 */
     fwrite(data, 1, sizeof(data), fp);
 
     fclose(fp);

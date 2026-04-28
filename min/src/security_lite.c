@@ -8,6 +8,9 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #define MOD "sec-lite"
 

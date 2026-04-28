@@ -26,6 +26,7 @@ static eai_status_t macos_hal_get_memory_info(eai_platform_t *plat,
 
     if (available) {
         vm_statistics64_data_t vm_stat;
+        memset(&vm_stat, 0, sizeof(vm_stat));
         mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
         if (host_statistics64(mach_host_self(), HOST_VM_INFO64,
                               (host_info64_t)&vm_stat, &count) == KERN_SUCCESS) {
