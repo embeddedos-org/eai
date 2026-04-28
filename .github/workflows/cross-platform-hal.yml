@@ -264,7 +264,7 @@ jobs:
     name: Android FTL (Physical Devices)
     runs-on: ubuntu-latest
     needs: hal-android
-    if: ${{ secrets.GOOGLE_CLOUD_SA_KEY != '' }}
+    if: false  # Enable by setting to: github.event_name != 'pull_request'
 
     steps:
       - uses: actions/checkout@v4

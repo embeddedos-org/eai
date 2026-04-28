@@ -85,6 +85,8 @@ jobs:
             cmake_system: Linux
             qemu: qemu-aarch64
             qemu_pkg: qemu-user
+            qemu_prefix: /usr/aarch64-linux-gnu
+            size_tool: aarch64-linux-gnu-size
             can_test: true
           - target: linux-armhf
             pkg: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
@@ -92,6 +94,8 @@ jobs:
             cmake_system: Linux
             qemu: qemu-arm
             qemu_pkg: qemu-user
+            qemu_prefix: /usr/arm-linux-gnueabihf
+            size_tool: arm-linux-gnueabihf-size
             can_test: true
           - target: linux-riscv64
             pkg: gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
@@ -99,12 +103,15 @@ jobs:
             cmake_system: Linux
             qemu: qemu-riscv64
             qemu_pkg: qemu-user
+            qemu_prefix: /usr/riscv64-linux-gnu
+            size_tool: riscv64-linux-gnu-size
             can_test: true
           - target: cortex-m4
             pkg: gcc-arm-none-eabi
             cc: arm-none-eabi-gcc
             cmake_system: Generic
             toolchain: cmake/toolchains/toolchain-arm-cortex-m4.cmake
+            size_tool: arm-none-eabi-size
             can_test: false
 
     steps:
@@ -138,8 +145,7 @@ jobs:
       - name: Test via QEMU user-mode
         if: ${{ matrix.can_test }}
         run: |
-          # Set QEMU interpreter for foreign binaries
-          export QEMU_LD_PREFIX=/usr/${{ matrix.cc | replace('-gcc', '') }}
+          export QEMU_LD_PREFIX=${{ matrix.qemu_prefix }}
           cd build && ctest --output-on-failure --parallel 4 || true
         continue-on-error: true
 
@@ -147,9 +153,9 @@ jobs:
         if: ${{ !matrix.can_test }}
         run: |
           echo "=== Binary sizes ==="
-          ${{ matrix.cc | replace('gcc', 'size') }} build/common/libeai_common.a || true
-          ${{ matrix.cc | replace('gcc', 'size') }} build/platform/libeai_platform.a || true
-          ${{ matrix.cc | replace('gcc', 'size') }} build/min/libeai_min.a || true
+          ${{ matrix.size_tool }} build/common/libeai_common.a || true
+          ${{ matrix.size_tool }} build/platform/libeai_platform.a || true
+          ${{ matrix.size_tool }} build/min/libeai_min.a || true
 
   # ═══════════════════════════════════════════════════════════
   # Android NDK cross-compilation
