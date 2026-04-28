@@ -1,0 +1,69 @@
+# eAI Containerized HAL Test Matrix
+#
+# Usage:
+#   docker compose up              # run all tests
+#   docker compose up gcc          # run only GCC tests
+#   docker compose up asan         # run only ASAN tests
+#   docker compose run dev bash    # interactive dev shell
+#
+# Build all images:
+#   docker compose build
+#
+# Run with parallel execution:
+#   docker compose up --abort-on-container-exit
+
+services:
+  # ── GCC (default, glibc) ───────────────────────────────
+  gcc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test-runner
+      args:
+        BUILD_TYPE: Release
+    container_name: eai-test-gcc
+
+  # ── Clang ──────────────────────────────────────────────
+  clang:
+    build:
+      context: .
+      dockerfile: ci/docker/Dockerfile.clang
+    container_name: eai-test-clang
+
+  # ── Alpine / musl libc ────────────────────────────────
+  alpine:
+    build:
+      context: .
+      dockerfile: ci/docker/Dockerfile.alpine
+    container_name: eai-test-alpine
+
+  # ── ASAN + UBSAN ──────────────────────────────────────
+  asan:
+    build:
+      context: .
+      dockerfile: ci/docker/Dockerfile.asan
+    container_name: eai-test-asan
+
+  # ── ARM64 via QEMU ────────────────────────────────────
+  arm64:
+    build:
+      context: .
+      dockerfile: ci/docker/Dockerfile.arm64
+    container_name: eai-test-arm64
+    # QEMU user-mode needs these
+    privileged: false
+    security_opt:
+      - seccomp=unconfined
+
+  # ── Dev shell ─────────────────────────────────────────
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: eai-dev
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/eai/src:ro
+    command: /bin/bash

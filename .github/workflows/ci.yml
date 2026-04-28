@@ -14,26 +14,241 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ═══════════════════════════════════════════════════════════
+  # Native builds — Linux, Windows, macOS with full module set
+  # ═══════════════════════════════════════════════════════════
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.os }}, ${{ matrix.compiler }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            cc: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            compiler: clang
+            cc: clang
+            cxx: clang++
+          - os: windows-latest
+            compiler: msvc
+            cc: cl
+            cxx: cl
+          - os: macos-latest
+            compiler: apple-clang
+            cc: clang
+            cxx: clang++
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -B build -DEAI_BUILD_TESTS=ON
+        run: >
+          cmake -B build
+          -DEAI_BUILD_TESTS=ON
+          -DEAI_BUILD_ACCEL=ON
+          -DEAI_BUILD_FORMATS=ON
+          -DEAI_BUILD_MIN=ON
+          -DEAI_BUILD_FRAMEWORK=ON
+          -DEAI_BUILD_BCI=ON
+          -DEAI_BUILD_CLI=ON
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
 
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build --config Release --parallel 4
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure -C Release
+        run: ctest --test-dir build --output-on-failure -C Release --parallel 4
 
+      - name: Report test summary
+        if: always()
+        run: ctest --test-dir build --output-on-failure -C Release -N
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════
+  # Linux cross-compilation for ARM/RISC-V
+  # ═══════════════════════════════════════════════════════════
+  cross-compile:
+    name: Cross (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-arm64
+            pkg: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            cc: aarch64-linux-gnu-gcc
+            cmake_system: Linux
+            qemu: qemu-aarch64
+            qemu_pkg: qemu-user
+            can_test: true
+          - target: linux-armhf
+            pkg: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+            cc: arm-linux-gnueabihf-gcc
+            cmake_system: Linux
+            qemu: qemu-arm
+            qemu_pkg: qemu-user
+            can_test: true
+          - target: linux-riscv64
+            pkg: gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
+            cc: riscv64-linux-gnu-gcc
+            cmake_system: Linux
+            qemu: qemu-riscv64
+            qemu_pkg: qemu-user
+            can_test: true
+          - target: cortex-m4
+            pkg: gcc-arm-none-eabi
+            cc: arm-none-eabi-gcc
+            cmake_system: Generic
+            toolchain: cmake/toolchains/toolchain-arm-cortex-m4.cmake
+            can_test: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.pkg }}
+          if [ "${{ matrix.qemu_pkg }}" != "" ]; then
+            sudo apt-get install -y ${{ matrix.qemu_pkg }}
+          fi
+
+      - name: Configure
+        run: |
+          CMAKE_ARGS="-DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_SYSTEM_NAME=${{ matrix.cmake_system }}"
+
+          if [ "${{ matrix.toolchain }}" != "" ]; then
+            CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${{ matrix.toolchain }}"
+            CMAKE_ARGS="$CMAKE_ARGS -DEAI_BUILD_TESTS=OFF -DEAI_BUILD_CLI=OFF -DEAI_BUILD_FRAMEWORK=OFF -DEAI_BUILD_BCI=OFF"
+            CMAKE_ARGS="$CMAKE_ARGS -DEAI_HAL_THREAD=OFF -DEAI_HAL_FS=OFF -DEAI_HAL_NET=OFF"
+          else
+            CMAKE_ARGS="$CMAKE_ARGS -DEAI_BUILD_TESTS=ON -DEAI_BUILD_ACCEL=ON -DEAI_BUILD_FORMATS=ON"
+          fi
+
+          cmake -B build $CMAKE_ARGS
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Test via QEMU user-mode
+        if: ${{ matrix.can_test }}
+        run: |
+          # Set QEMU interpreter for foreign binaries
+          export QEMU_LD_PREFIX=/usr/${{ matrix.cc | replace('-gcc', '') }}
+          cd build && ctest --output-on-failure --parallel 4 || true
+        continue-on-error: true
+
+      - name: Report binary sizes
+        if: ${{ !matrix.can_test }}
+        run: |
+          echo "=== Binary sizes ==="
+          ${{ matrix.cc | replace('gcc', 'size') }} build/common/libeai_common.a || true
+          ${{ matrix.cc | replace('gcc', 'size') }} build/platform/libeai_platform.a || true
+          ${{ matrix.cc | replace('gcc', 'size') }} build/min/libeai_min.a || true
+
+  # ═══════════════════════════════════════════════════════════
+  # Android NDK cross-compilation
+  # ═══════════════════════════════════════════════════════════
+  android:
+    name: Android (${{ matrix.abi }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            api: 26
+          - abi: armeabi-v7a
+            api: 26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r26d
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: android-${{ matrix.abi }}-${{ hashFiles('CMakeLists.txt', 'platform/**', 'accel/**') }}
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_NATIVE_API_LEVEL=${{ matrix.api }} \
+            -DEAI_BUILD_TESTS=OFF \
+            -DEAI_BUILD_CLI=OFF \
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON \
+            -DEAI_BUILD_MIN=ON \
+            -DEAI_BUILD_FRAMEWORK=OFF \
+            -DEAI_BUILD_BCI=OFF
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Report library sizes
+        run: |
+          echo "=== Android ${{ matrix.abi }} library sizes ==="
+          find build -name '*.a' | sort | while read f; do
+            SIZE=$(stat --printf="%s" "$f")
+            printf "  %-40s %d KB\n" "$(basename $f)" "$((SIZE / 1024))"
+          done
+
+  # ═══════════════════════════════════════════════════════════
+  # Container platform testing (Docker)
+  # ═══════════════════════════════════════════════════════════
+  container:
+    name: Container (Docker)
+    runs-on: ubuntu-latest
+    container:
+      image: gcc:13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CMake
+        run: |
+          apt-get update && apt-get install -y cmake
+
+      - name: Configure (container-aware)
+        run: |
+          cmake -B build \
+            -DEAI_BUILD_TESTS=ON \
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON \
+            -DEAI_PLATFORM_CONTAINER=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Test
+        run: |
+          cd build && ctest --output-on-failure --parallel 4
+          echo ""
+          echo "=== Container platform detection ==="
+          # The platform detect test should identify we're in a container
+          ./tests/eai_test_platform 2>&1 || true
+
+  # ═══════════════════════════════════════════════════════════
+  # Deployment profiles
+  # ═══════════════════════════════════════════════════════════
   build-profiles:
     name: Profile (${{ matrix.profile }})
     runs-on: ubuntu-latest
@@ -55,39 +270,14 @@ jobs:
             -DEAI_BUILD_TESTS=OFF \
             -DEAI_BUILD_MIN=ON \
             -DEAI_BUILD_FRAMEWORK=ON \
-            -DEAI_BUILD_BCI=ON
-          cmake --build build
+            -DEAI_BUILD_BCI=ON \
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON
+          cmake --build build --parallel $(nproc)
 
-  cross-compile:
-    name: Cross (${{ matrix.arch }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: aarch64
-            pkg: gcc-aarch64-linux-gnu
-            cc: aarch64-linux-gnu-gcc
-          - arch: arm
-            pkg: gcc-arm-linux-gnueabihf
-            cc: arm-linux-gnueabihf-gcc
-          - arch: riscv64
-            pkg: gcc-riscv64-linux-gnu
-            cc: riscv64-linux-gnu-gcc
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install cross-compiler
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ${{ matrix.pkg }}
-      - name: Cross-compile
-        run: |
-          cmake -B build \
-            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DEAI_BUILD_TESTS=OFF
-          cmake --build build
-
+  # ═══════════════════════════════════════════════════════════
+  # Sanitizers (ASAN + UBSAN)
+  # ═══════════════════════════════════════════════════════════
   sanitize:
     name: Sanitizers
     runs-on: ubuntu-latest
@@ -97,10 +287,61 @@ jobs:
         run: |
           cmake -B build \
             -DEAI_BUILD_TESTS=ON \
-            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
-          cmake --build build
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+          cmake --build build --parallel $(nproc)
       - name: Run tests under sanitizers
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --parallel 4
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1
+
+  # ═══════════════════════════════════════════════════════════
+  # Static analysis
+  # ═══════════════════════════════════════════════════════════
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning,performance,portability \
+            --suppress=missingIncludeSystem \
+            --error-exitcode=1 \
+            --inline-suppr \
+            -I common/include -I platform/include -I accel/include -I formats/include \
+            common/src platform/src accel/src formats/src
+
+  # ═══════════════════════════════════════════════════════════
+  # CI gate
+  # ═══════════════════════════════════════════════════════════
+  ci-gate:
+    name: CI Gate
+    if: always()
+    needs: [build, cross-compile, android, container, sanitize, static-analysis]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  eAI CI Results"
+          echo "═══════════════════════════════════════"
+          echo "Native build:     ${{ needs.build.result }}"
+          echo "Cross-compile:    ${{ needs.cross-compile.result }}"
+          echo "Android:          ${{ needs.android.result }}"
+          echo "Container:        ${{ needs.container.result }}"
+          echo "Sanitizers:       ${{ needs.sanitize.result }}"
+          echo "Static analysis:  ${{ needs.static-analysis.result }}"
+          echo "═══════════════════════════════════════"
+
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "❌ Native build failed"; exit 1
+          fi
+          if [ "${{ needs.sanitize.result }}" != "success" ]; then
+            echo "❌ Sanitizers failed"; exit 1
+          fi
+          echo "✅ CI gate passed"

@@ -1,0 +1,45 @@
+# eAI ARM64 Cross-Compile + QEMU Test Image
+FROM gcc:13-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    gcc-aarch64-linux-gnu \
+    g++-aarch64-linux-gnu \
+    qemu-user \
+    qemu-user-binfmt \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /eai
+COPY . .
+
+RUN cmake -B build \
+    -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+    -DCMAKE_SYSTEM_NAME=Linux \
+    -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+    -DEAI_BUILD_TESTS=ON \
+    -DEAI_BUILD_ACCEL=ON \
+    -DEAI_BUILD_FORMATS=ON \
+    -DEAI_BUILD_MIN=ON \
+    -DEAI_BUILD_FRAMEWORK=ON \
+    -DEAI_BUILD_BCI=ON \
+    && cmake --build build --parallel $(nproc)
+
+ENV QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
+
+CMD ["sh", "-c", "\
+echo '=== eAI ARM64 Tests via QEMU ===' && \
+PASS=0 && FAIL=0 && \
+for t in /eai/build/tests/eai_test_*; do \
+    NAME=$(basename $t); \
+    if [ -x \"$t\" ]; then \
+        echo \"--- $NAME ---\"; \
+        if qemu-aarch64 -L $QEMU_LD_PREFIX $t; then \
+            PASS=$((PASS + 1)); \
+        else \
+            FAIL=$((FAIL + 1)); \
+        fi; \
+        echo ''; \
+    fi; \
+done && \
+echo \"Passed: $PASS  Failed: $FAIL\" && \
+[ $FAIL -eq 0 ]"]

@@ -1,0 +1,24 @@
+# eAI Clang Test Image — verifies compilation under Clang/libc++
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    clang \
+    lld \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /eai
+COPY . .
+
+RUN CC=clang cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DEAI_BUILD_TESTS=ON \
+    -DEAI_BUILD_ACCEL=ON \
+    -DEAI_BUILD_FORMATS=ON \
+    -DEAI_BUILD_MIN=ON \
+    -DEAI_BUILD_FRAMEWORK=ON \
+    -DEAI_BUILD_BCI=ON \
+    -DEAI_PLATFORM_CONTAINER=ON \
+    && cmake --build build --parallel $(nproc)
+
+CMD ["sh", "-c", "cd /eai/build && ctest --output-on-failure --parallel $(nproc)"]

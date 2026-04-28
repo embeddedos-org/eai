@@ -1,0 +1,27 @@
+# Build artifacts
+build*/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.github/
+
+# Docs (not needed for build/test)
+docs/
+*.md
+!README.md
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -36,6 +36,9 @@ static void print_usage(const char *prog)
     printf("  profile <name>   Load a deployment profile\n");
     printf("  config <file>    Load configuration from file\n");
     printf("  version          Show version information\n");
+    printf("  bench            Run inference benchmarks\n");
+    printf("  convert          Convert model formats\n");
+    printf("  profile <name>   Load a deployment profile\n");
     printf("  help             Show this help message\n");
     printf("\n");
     printf("Profiles:\n");
@@ -351,6 +354,20 @@ int main(int argc, char *argv[])
         print_banner();
         eai_config_dump(&cfg);
         return 0;
+    }
+
+    /* Developer tools subcommands */
+    if (strcmp(cmd, "bench") == 0) {
+        extern int eai_bench_main(int argc, const char **argv);
+        return eai_bench_main(argc - 2, (const char **)(argv + 2));
+    }
+    if (strcmp(cmd, "convert") == 0) {
+        extern int eai_convert_main(int argc, const char **argv);
+        return eai_convert_main(argc - 2, (const char **)(argv + 2));
+    }
+    if (strcmp(cmd, "profiler") == 0) {
+        extern int eai_profile_main(int argc, const char **argv);
+        return eai_profile_main(argc - 2, (const char **)(argv + 2));
     }
 
     fprintf(stderr, "Unknown command: %s\n", cmd);

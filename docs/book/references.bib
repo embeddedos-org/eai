@@ -1,3 +1,6 @@
+% eAI Embedded AI - References
+% EmbeddedOS Project
+
 @book{warden2019,
   author    = {Pete Warden and Daniel Situnayake},
   title     = {{TinyML}: Machine Learning with {TensorFlow Lite} on {Arduino} and Ultra-Low-Power Microcontrollers},
@@ -6,40 +9,54 @@
   isbn      = {978-1492052043}
 }
 
-@misc{tflite_micro,
-  author = {{Google}},
-  title  = {{TensorFlow Lite} for Microcontrollers},
-  year   = {2024},
-  url    = {https://www.tensorflow.org/lite/microcontrollers}
+@misc{tflitemicro2021,
+  author       = {{TensorFlow Team}},
+  title        = {{TensorFlow Lite} for Microcontrollers},
+  year         = {2021},
+  howpublished = {\url{https://www.tensorflow.org/lite/microcontrollers}},
+  note         = {Google TensorFlow Project}
 }
 
 @inproceedings{mcmahan2017,
   author    = {Brendan McMahan and Eider Moore and Daniel Ramage and Seth Hampson and Blaise Ag{\"u}era y Arcas},
   title     = {Communication-Efficient Learning of Deep Networks from Decentralized Data},
-  booktitle = {AISTATS},
+  booktitle = {Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  pages     = {1273--1282},
   year      = {2017}
 }
 
-@article{hu2021,
-  author  = {Edward J. Hu and Yelong Shen and Phillip Wallis and Zeyuan Allen-Zhu and Yuanzhi Li and Shean Wang and Lu Wang and Weizhu Chen},
-  title   = {{LoRA}: Low-Rank Adaptation of Large Language Models},
-  journal = {arXiv preprint arXiv:2106.09685},
-  year    = {2021}
+@inproceedings{hu2022,
+  author    = {Edward J. Hu and Yelong Shen and Phillip Wallis and Zeyuan Allen-Zhu and Yuanzhi Li and Shean Wang and Lu Wang and Weizhu Chen},
+  title     = {{LoRA}: Low-Rank Adaptation of Large Language Models},
+  booktitle = {Proceedings of the International Conference on Learning Representations (ICLR)},
+  year      = {2022}
 }
 
 @article{zhao2023,
-  author  = {Wayne Xin Zhao and Kun Zhou and Junyi Li and others},
+  author  = {Wayne Xin Zhao and Kun Zhou and Junyi Li and Tianyi Tang and Xiaolei Wang and Yupeng Hou and Yingqian Min and Beichen Zhang and Junjie Zhang and Zican Dong and others},
   title   = {A Survey of Large Language Models},
   journal = {arXiv preprint arXiv:2303.18223},
   year    = {2023}
 }
 
 @inproceedings{jacob2018,
-  author    = {Benoit Jacob and Skirmantas Kligys and Bo Chen and Menglong Zhu and others},
+  author    = {Benoit Jacob and Skirmantas Kligys and Bo Chen and Menglong Zhu and Matthew Tang and Andrew Howard and Hartwig Adam and Dmitry Kalenichenko},
   title     = {Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference},
-  booktitle = {CVPR},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {2704--2713},
   year      = {2018},
   doi       = {10.1109/CVPR.2018.00286}
+}
+
+@article{zhou2019,
+  author  = {Zhi Zhou and Xu Chen and En Li and Liekang Zeng and Ke Luo and Junshan Zhang},
+  title   = {Edge Intelligence: Paving the Last Mile of Artificial Intelligence with Edge Computing},
+  journal = {Proceedings of the IEEE},
+  volume  = {107},
+  number  = {8},
+  pages   = {1738--1762},
+  year    = {2019},
+  doi     = {10.1109/JPROC.2019.2918951}
 }
 
 @article{hinton2015,
@@ -60,18 +77,34 @@
   doi     = {10.1109/JIOT.2020.2984887}
 }
 
-@inproceedings{banbury2021,
-  author    = {Colby Banbury and Vijay Janapa Reddi and Max Lam and others},
-  title     = {{MLPerf} Tiny Benchmark},
-  booktitle = {NeurIPS Datasets and Benchmarks Track},
-  year      = {2021}
+@article{banbury2021,
+  author  = {Colby Banbury and Vijay Janapa Reddi and Max Lam and William Fu and Amin Fazel and Jeremy Holleman and Xinyuan Huang and Robert Hurt and Jeremy Hyun and Daniel Shepherd and others},
+  title   = {{MLPerf} Tiny Benchmark},
+  journal = {arXiv preprint arXiv:2106.07597},
+  year    = {2021}
+}
+
+@inproceedings{han2016,
+  author    = {Song Han and Huizi Mao and William J. Dally},
+  title     = {Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and {Huffman} Coding},
+  booktitle = {Proceedings of the International Conference on Learning Representations (ICLR)},
+  year      = {2016}
 }
 
 @article{lin2020,
   author  = {Ji Lin and Wei-Ming Chen and Yujun Lin and John Cohn and Chuang Gan and Song Han},
   title   = {{MCUNet}: Tiny Deep Learning on {IoT} Devices},
-  journal = {NeurIPS},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {33},
+  pages   = {11711--11722},
   year    = {2020}
+}
+
+@inproceedings{dettmers2023,
+  author    = {Tim Dettmers and Artidoro Pagnoni and Ari Holtzman and Luke Zettlemoyer},
+  title     = {{QLoRA}: Efficient Finetuning of Quantized Language Models},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2023}
 }
 
 @misc{onnx_runtime,

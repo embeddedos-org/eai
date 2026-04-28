@@ -1,0 +1,20 @@
+# eAI Alpine/musl Test Image — verifies portability to musl libc
+FROM alpine:3.19
+
+RUN apk add --no-cache build-base cmake linux-headers
+
+WORKDIR /eai
+COPY . .
+
+RUN cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DEAI_BUILD_TESTS=ON \
+    -DEAI_BUILD_ACCEL=ON \
+    -DEAI_BUILD_FORMATS=ON \
+    -DEAI_BUILD_MIN=ON \
+    -DEAI_BUILD_FRAMEWORK=ON \
+    -DEAI_BUILD_BCI=ON \
+    -DEAI_PLATFORM_CONTAINER=ON \
+    && cmake --build build --parallel $(nproc)
+
+CMD ["sh", "-c", "cd /eai/build && ctest --output-on-failure --parallel $(nproc)"]

@@ -1,8 +1,8 @@
 #!/bin/bash
-# CI: Build eAI with BCI on native Linux x86_64
+# CI: Build eAI with all modules on native Linux x86_64
 set -euo pipefail
 
-echo "=== eAI BCI Build (Linux x86_64) ==="
+echo "=== eAI Full Build (Linux x86_64) ==="
 
 BUILD_DIR="${BUILD_DIR:-build-linux}"
 
@@ -16,8 +16,13 @@ cmake .. \
     -DEAI_BUILD_BCI=ON \
     -DEAI_BUILD_CLI=ON \
     -DEAI_BUILD_TESTS=ON \
+    -DEAI_BUILD_ACCEL=ON \
+    -DEAI_BUILD_FORMATS=ON \
     -DEAI_BCI_SIMULATOR=ON
 
 cmake --build . --parallel "$(nproc)"
 
 echo "=== Build complete ==="
+echo ""
+echo "Running tests..."
+ctest --output-on-failure --parallel "$(nproc)"

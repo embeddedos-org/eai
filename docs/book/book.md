@@ -704,6 +704,8 @@ eai_manifest_verify(&manifest, "phi-3-mini-q4.gguf");
 
 ### 15.1 Quantization Levels
 
+Quantization reduces model precision to decrease memory usage and improve inference speed, drawing on techniques from knowledge distillation and model compression [@hinton2015].
+
 | Level | Size vs F32 | Quality | Speed vs F32 | Use Case |
 |---|---|---|---|---|
 | F32 | 100% | 100% | 1.0x | Development/testing |
@@ -814,7 +816,7 @@ eai_min_runtime_infer(&runtime, "Hello, world!", output, sizeof(output));
 
 ### 17.2 TFLite Micro Backend
 
-For traditional ML models (classification, detection):
+For traditional ML models (classification, detection) [@tflite_micro], TFLite Micro enables on-device inference even on microcontrollers [@warden2019]:
 
 ```c
 eai_min_runtime_t runtime;
@@ -1021,6 +1023,8 @@ eai_fw_sc_check_vulnerabilities(&sbom);
 
 ### 22.1 On-Device LoRA Fine-Tuning
 
+LoRA (Low-Rank Adaptation) [@hu2021] enables efficient on-device fine-tuning by training only small adapter matrices rather than the full model weights.
+
 ```c
 eai_fw_adaptive_t adaptive;
 eai_fw_adaptive_init(&adaptive, &runtime);
@@ -1061,6 +1065,8 @@ Apply Adapter to Runtime
 ## Chapter 23: Federated Learning
 
 ### 23.1 FedAvg with Differential Privacy
+
+Federated Averaging (FedAvg) [@mcmahan2017] allows multiple devices to collaboratively train a shared model without exchanging raw data.
 
 ```c
 eai_fw_federated_t fed;
@@ -1411,6 +1417,13 @@ See `docs/compliance/` for traceability matrix, risk register, and audit logs.
 
 *This book is part of the EmbeddedOS Documentation Series.*
 *For the latest version, visit: https://github.com/embeddedos-org/eai*
+
+---
+
+## References
+
+::: {#refs}
+:::
 
 ---
 Part of the [EmbeddedOS Organization](https://embeddedos-org.github.io).

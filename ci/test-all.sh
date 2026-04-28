@@ -15,4 +15,7 @@ cd "$BUILD_DIR"
 ctest --output-on-failure --parallel "$(nproc)"
 
 echo ""
+echo "=== Test Summary ==="
+ctest -N | tail -1
+echo ""
 echo "=== All tests completed ==="

@@ -1,0 +1,473 @@
+name: Cross-Platform HAL Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'platform/**'
+      - 'accel/**'
+      - 'formats/**'
+      - 'common/**'
+  pull_request:
+    paths:
+      - 'platform/**'
+      - 'accel/**'
+      - 'formats/**'
+      - 'common/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ═══════════════════════════════════════════════════════════
+  # Full HAL test matrix — native
+  # ═══════════════════════════════════════════════════════════
+  hal-native:
+    name: HAL ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- Linux x64 (GCC) ---
+          - name: linux-x64-gcc
+            os: ubuntu-latest
+            cc: gcc
+            extra_cmake: ""
+
+          # --- Linux x64 (Clang) ---
+          - name: linux-x64-clang
+            os: ubuntu-latest
+            cc: clang
+            extra_cmake: ""
+
+          # --- macOS ARM64 (Apple Clang) ---
+          - name: macos-arm64
+            os: macos-latest
+            cc: clang
+            extra_cmake: "-DEAI_PLATFORM_MACOS=ON"
+
+          # --- macOS x64 (Apple Clang) ---
+          - name: macos-x64
+            os: macos-13
+            cc: clang
+            extra_cmake: "-DEAI_PLATFORM_MACOS=ON"
+
+          # --- Windows x64 (MSVC) ---
+          - name: windows-x64-msvc
+            os: windows-latest
+            cc: cl
+            extra_cmake: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DEAI_BUILD_TESTS=ON
+          -DEAI_BUILD_ACCEL=ON
+          -DEAI_BUILD_FORMATS=ON
+          -DEAI_BUILD_MIN=ON
+          -DEAI_BUILD_FRAMEWORK=ON
+          -DEAI_BUILD_BCI=ON
+          ${{ matrix.extra_cmake }}
+        env:
+          CC: ${{ matrix.cc }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Run all tests
+        run: ctest --test-dir build --output-on-failure -C Release --parallel 4
+
+      - name: Run HAL-specific tests
+        shell: bash
+        run: |
+          echo "=== HAL Platform Tests ==="
+          cd build
+          # Run individual HAL test binaries for detailed output
+          for test_bin in eai_test_platform eai_test_hal_core eai_test_platform_hal eai_test_hal_subsystems eai_test_eai_api eai_test_api_extended; do
+            if [ -f "tests/$test_bin" ]; then
+              echo "--- $test_bin ---"
+              tests/$test_bin || true
+            elif [ -f "tests/Release/$test_bin.exe" ]; then
+              echo "--- $test_bin ---"
+              tests/Release/$test_bin.exe || true
+            elif [ -f "tests/Debug/$test_bin.exe" ]; then
+              echo "--- $test_bin ---"
+              tests/Debug/$test_bin.exe || true
+            fi
+          done
+
+  # ═══════════════════════════════════════════════════════════
+  # Linux ARM64 via QEMU user-mode
+  # ═══════════════════════════════════════════════════════════
+  hal-qemu-arm64:
+    name: HAL linux-arm64 (QEMU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu qemu-user qemu-user-binfmt
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DEAI_BUILD_TESTS=ON \
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON \
+            -DEAI_BUILD_MIN=ON \
+            -DEAI_BUILD_FRAMEWORK=ON \
+            -DEAI_BUILD_BCI=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Test via QEMU
+        run: |
+          echo "=== ARM64 HAL Tests via QEMU user-mode ==="
+          cd build
+          # binfmt_misc should auto-invoke qemu-aarch64 for ARM64 binaries
+          for test_bin in tests/eai_test_platform tests/eai_test_hal_core tests/eai_test_platform_hal tests/eai_test_accel tests/eai_test_tensor tests/eai_test_status tests/eai_test_common; do
+            if [ -f "$test_bin" ]; then
+              echo "--- $(basename $test_bin) ---"
+              qemu-aarch64 -L /usr/aarch64-linux-gnu "$test_bin" || true
+            fi
+          done
+        env:
+          QEMU_LD_PREFIX: /usr/aarch64-linux-gnu
+
+  # ═══════════════════════════════════════════════════════════
+  # Android NDK — build + emulator test
+  # ═══════════════════════════════════════════════════════════
+  hal-android:
+    name: Android (${{ matrix.abi }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            api: 26
+            run_emulator: false
+          - abi: x86_64
+            api: 30
+            run_emulator: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java (required by Android SDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r26d
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build-android-${{ matrix.abi }}
+          key: android-${{ matrix.abi }}-${{ hashFiles('CMakeLists.txt', 'platform/**', 'accel/**', 'common/**') }}
+
+      - name: Configure
+        run: |
+          cmake -B build-android-${{ matrix.abi }} \
+            -DCMAKE_TOOLCHAIN_FILE=${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_NATIVE_API_LEVEL=${{ matrix.api }} \
+            -DEAI_BUILD_TESTS=ON \
+            -DEAI_BUILD_CLI=OFF \
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON \
+            -DEAI_BUILD_MIN=ON \
+            -DEAI_BUILD_FRAMEWORK=OFF \
+            -DEAI_BUILD_BCI=OFF
+
+      - name: Build
+        run: cmake --build build-android-${{ matrix.abi }} --parallel $(nproc)
+
+      - name: Report library sizes
+        run: |
+          echo "=== Android ${{ matrix.abi }} library sizes ==="
+          find build-android-${{ matrix.abi }} -name '*.a' | sort | while read f; do
+            SIZE=$(stat --printf="%s" "$f")
+            printf "  %-40s %d KB\n" "$(basename $f)" "$((SIZE / 1024))"
+          done
+
+      - name: Run tests on Android emulator
+        if: matrix.run_emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            echo "=== Waiting for emulator ==="
+            adb wait-for-device
+            adb shell getprop ro.build.version.release
+
+            echo ""
+            echo "=== Pushing test binaries ==="
+            TEST_DIR="build-android-${{ matrix.abi }}/tests"
+            PASS=0 FAIL=0
+
+            for test_bin in $(find "$TEST_DIR" -maxdepth 1 -type f -executable 2>/dev/null); do
+              BASENAME=$(basename "$test_bin")
+              adb push "$test_bin" /data/local/tmp/ > /dev/null 2>&1
+              adb shell chmod 755 /data/local/tmp/"$BASENAME"
+
+              echo "--- $BASENAME ---"
+              if adb shell /data/local/tmp/"$BASENAME" 2>&1; then
+                PASS=$((PASS + 1))
+              else
+                FAIL=$((FAIL + 1))
+              fi
+            done
+
+            echo ""
+            echo "═══════════════════════════════"
+            echo "  Android Emulator Results"
+            echo "  Passed: $PASS  Failed: $FAIL"
+            echo "═══════════════════════════════"
+        timeout-minutes: 15
+        continue-on-error: true
+
+      - name: Upload test binaries
+        if: matrix.run_emulator
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-binaries-${{ matrix.abi }}
+          path: build-android-${{ matrix.abi }}/tests/eai_test_*
+          retention-days: 3
+
+  # ═══════════════════════════════════════════════════════════
+  # Android Firebase Test Lab (optional — needs secrets)
+  # ═══════════════════════════════════════════════════════════
+  hal-android-ftl:
+    name: Android FTL (Physical Devices)
+    runs-on: ubuntu-latest
+    needs: hal-android
+    if: ${{ secrets.GOOGLE_CLOUD_SA_KEY != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download test binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: android-test-binaries-x86_64
+          path: test-binaries/
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_SA_KEY }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+
+      - name: Run on Firebase Test Lab
+        run: |
+          echo "=== Firebase Test Lab ==="
+          echo "Note: This requires a test APK wrapper."
+          echo "For native binaries, use 'gcloud firebase test android run' with a shell script."
+          echo "Skipping — APK wrapper not yet implemented."
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════
+  # Dockerized HAL test matrix
+  # ═══════════════════════════════════════════════════════════
+  hal-docker:
+    name: Docker (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc-glibc
+            dockerfile: Dockerfile
+            target: test-runner
+            build_args: ""
+          - name: clang
+            dockerfile: ci/docker/Dockerfile.clang
+            target: ""
+            build_args: ""
+          - name: alpine-musl
+            dockerfile: ci/docker/Dockerfile.alpine
+            target: ""
+            build_args: ""
+          - name: asan-ubsan
+            dockerfile: ci/docker/Dockerfile.asan
+            target: ""
+            build_args: ""
+          - name: arm64-qemu
+            dockerfile: ci/docker/Dockerfile.arm64
+            target: ""
+            build_args: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Enable QEMU for ARM64 emulation
+      - name: Set up QEMU
+        if: matrix.name == 'arm64-qemu'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build image
+        run: |
+          BUILD_CMD="docker build -f ${{ matrix.dockerfile }}"
+          if [ -n "${{ matrix.target }}" ]; then
+            BUILD_CMD="$BUILD_CMD --target ${{ matrix.target }}"
+          fi
+          $BUILD_CMD -t eai-test-${{ matrix.name }} .
+
+      - name: Run tests
+        run: docker run --rm eai-test-${{ matrix.name }}
+
+      - name: Container platform detection
+        if: matrix.name != 'arm64-qemu'
+        run: |
+          echo "=== Container detection test ==="
+          docker run --rm --entrypoint "" eai-test-${{ matrix.name }} \
+            sh -c "cat /proc/1/cgroup 2>/dev/null | head -5 || echo 'no cgroup info'"
+
+  # ═══════════════════════════════════════════════════════════
+  # Container platform detection (legacy inline builds)
+  # ═══════════════════════════════════════════════════════════
+  hal-container:
+    name: HAL Container (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc13
+            image: gcc:13
+            install: "apt-get update && apt-get install -y cmake"
+          - name: alpine
+            image: alpine:3.19
+            install: "apk add --no-cache build-base cmake linux-headers"
+
+    container:
+      image: ${{ matrix.image }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: ${{ matrix.install }}
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DEAI_BUILD_TESTS=ON \
+            -DEAI_BUILD_ACCEL=ON \
+            -DEAI_BUILD_FORMATS=ON \
+            -DEAI_PLATFORM_CONTAINER=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Test
+        run: |
+          cd build && ctest --output-on-failure --parallel 4
+          echo ""
+          echo "=== Container detection ==="
+          tests/eai_test_platform 2>&1 || true
+
+  # ═══════════════════════════════════════════════════════════
+  # MCU toolchain verification (build-only)
+  # ═══════════════════════════════════════════════════════════
+  hal-mcu:
+    name: HAL MCU (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: cortex-m4
+            toolchain: cmake/toolchains/toolchain-arm-cortex-m4.cmake
+          - target: cortex-m7
+            toolchain: cmake/toolchains/toolchain-arm-cortex-m7.cmake
+          - target: cortex-m0plus
+            toolchain: cmake/toolchains/toolchain-arm-cortex-m0plus.cmake
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ matrix.toolchain }} \
+            -DEAI_BUILD_TESTS=OFF \
+            -DEAI_BUILD_CLI=OFF \
+            -DEAI_BUILD_FRAMEWORK=OFF \
+            -DEAI_BUILD_BCI=OFF \
+            -DEAI_HAL_THREAD=OFF \
+            -DEAI_HAL_FS=OFF \
+            -DEAI_HAL_NET=OFF \
+            -DEAI_BUILD_FORMATS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Report sizes
+        run: |
+          echo "=== ${{ matrix.target }} binary sizes ==="
+          arm-none-eabi-size build/common/libeai_common.a || true
+          arm-none-eabi-size build/platform/libeai_platform.a || true
+          arm-none-eabi-size build/min/libeai_min.a || true
+
+  # ═══════════════════════════════════════════════════════════
+  # Gate
+  # ═══════════════════════════════════════════════════════════
+  hal-gate:
+    name: HAL Gate
+    if: always()
+    needs: [hal-native, hal-qemu-arm64, hal-android, hal-android-ftl, hal-docker, hal-container, hal-mcu]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Results
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  Cross-Platform HAL Test Results"
+          echo "═══════════════════════════════════════"
+          echo "Native (Lin/Win/Mac):  ${{ needs.hal-native.result }}"
+          echo "QEMU ARM64:           ${{ needs.hal-qemu-arm64.result }}"
+          echo "Android NDK:          ${{ needs.hal-android.result }}"
+          echo "Android FTL:          ${{ needs.hal-android-ftl.result }}"
+          echo "Docker matrix:        ${{ needs.hal-docker.result }}"
+          echo "Container inline:     ${{ needs.hal-container.result }}"
+          echo "MCU toolchains:       ${{ needs.hal-mcu.result }}"
+          echo "═══════════════════════════════════════"
+
+          # Native is required to pass
+          if [ "${{ needs.hal-native.result }}" != "success" ]; then
+            echo "❌ Native HAL tests failed"; exit 1
+          fi
+          echo "✅ HAL gate passed"
